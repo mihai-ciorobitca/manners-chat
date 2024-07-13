@@ -34,6 +34,7 @@ def home():
         messages = []
         if len(messages_response.data) > 0:
             messages = messages_response.data
+        print(messages)
         return render_template('index.html', username=username, messages=messages, groups=groups)
     return redirect('/login')
 
@@ -93,8 +94,8 @@ def send_message():
 @app.route('/get_messages', methods=['POST'])
 def get_messages():
     groupname = request.json.get('groupname', '')
-    response = supabase_client.table('messages').select('*').eq('groupname', groupname).order('date', desc=True).execute()
-    if response['error'] is not None:
-        return jsonify({'status': 'Error', 'message': str(response['error'])}), 500
-    messages = response['data']
+    response = supabase_client.table('messages').select('*').eq('groupname', groupname).order('date').execute()
+    messages = []
+    if len(response.data) > 0:
+        messages = response.data
     return jsonify(messages)

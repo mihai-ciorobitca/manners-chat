@@ -25,15 +25,15 @@
       <div class="col-lg-3 d-none d-lg-flex flex-column border-right p-0">
         <div class="card-header p-2">My Groups</div>
         <div class="list-group overflow-auto flex-grow-1">
-          {% for group in groups %}
+          {% for groupname in groups %}
           <a href="#" class="list-group-item list-group-item-action p-2 group-link"
-            data-group-name="{{group.name}}">{{group.name}}</a>
+            data-group-name="{{groupname}}">{{groupname}}</a>
           {% endfor %}
         </div>
       </div>
       <div class="col-lg-9 col-12 d-flex flex-column p-0">
         <div class="card flex-grow-1 d-flex flex-column m-0">
-          <div class="card-header p-2" id="current-chat-header">Current Chat</div>
+          <div class="card-header p-2" id="current-chat-header"></div>
           <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1" id="message-container">
           </div>
           <div class="card-footer p-2">
@@ -56,7 +56,16 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
   <script>
-    var groupInLocalStorage = localStorage.getItem('group');
+    var currentChatHeader = document.getElementById("current-chat-header");
+    var groupName = localStorage.getItem("groupname");
+
+    if (groupName) {
+      currentChatHeader.textContent = groupName;
+    } else {
+      currentChatHeader.textContent = "No Group";
+    }
+
+    var groupInLocalStorage = localStorage.getItem('groupname');
     var messageInput = document.getElementById('message-input');
     if (!groupInLocalStorage) {
       messageInput.disabled = true;
@@ -103,7 +112,7 @@
           const senderElement = document.createElement('span');
           senderElement.style.fontWeight = 'bold';
 
-          if (message.sender === '{{ username }}') {
+          if (message.username === '{{ username }}') {
             senderElement.innerHTML = 'me<br>';
             messageElement.classList.add('bg-primary', 'text-white', 'ml-auto');
           } else {
@@ -133,7 +142,7 @@
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ text: message }),
+          body: JSON.stringify({ text: message, groupname: localStorage.getItem('groupname') }),
         });
         if (!response.ok) {
           throw new Error('Failed to send message');
