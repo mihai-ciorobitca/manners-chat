@@ -24,18 +24,16 @@ def home():
             select('groupname').\
             eq('username', username)
         groups_response = groups_query.execute()
-        if groups_response.status_code == 200:
+        groups = []
+        if len(groups_response.data) > 0:
             groups = [group['groupname'] for group in groups_response.data]
-        else:
-            groups = []
         messages_query = supabase_client.from_('messages').\
             select('*').\
             in_('groupname', groups)
         messages_response = messages_query.execute()
-        if messages_response.status_code == 200:
+        messages = []
+        if len(messages_response.data) > 0:
             messages = messages_response.data
-        else:
-            messages = []
         return render_template('index.html', username=username, messages=messages, groups=groups)
     return redirect('/login')
 
