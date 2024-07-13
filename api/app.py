@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, session, redirect
+from flask import Flask, render_template, request, session, redirect, jsonify
 from supabase import create_client
 from werkzeug.security import check_password_hash, generate_password_hash
 from dotenv import load_dotenv
@@ -58,4 +58,20 @@ def register():
         password = request.form['password']
         supabase_client.table('users').insert({"username": username, "password": generate_password_hash(password)}).execute()
         return redirect('/login')   
-    return render_template('register.html', errorMsg="")
+    return render_template('register.html', errorMsg="", username=session["username"])
+
+
+@app.route('/send_message', methods=['POST'])
+def send_message():
+    data = request.get_json()
+    sender = session["username"]
+    text = data['text']
+    group = "group1"
+    supabase_client.table('messages').insert({"sender": sender, "text": text, "group": group}).execute()
+    return jsonify({'status': 'Message sent successfully'})
+
+@app.route('/get_messages', methods=['GET'])
+def get_messages():
+    response = supabase_client.table('messages').select('*').order('date', desc=False).execute()
+    messages = response.data
+    return jsonify(messages)
