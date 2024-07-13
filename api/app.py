@@ -19,7 +19,7 @@ supabase_client = create_client(supabase_url, supabase_key)
 @app.route('/')
 def home():
     if 'username' in session:
-        groups = supabase_client.table("messages").select('*').execute().data
+        groups = supabase_client.table("groups").select('*').execute().data
         messages = supabase_client.table("messages").select('*').execute().data
         return render_template('index.html', username=session["username"], messages=messages, groups=groups)
     return redirect('/login')
@@ -58,7 +58,7 @@ def register():
         password = request.form['password']
         supabase_client.table('users').insert({"username": username, "password": generate_password_hash(password)}).execute()
         return redirect('/login')   
-    return render_template('register.html', errorMsg="", username=session["username"])
+    return render_template('register.html', errorMsg="")
 
 
 @app.route('/send_message', methods=['POST'])
