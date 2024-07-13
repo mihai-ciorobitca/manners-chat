@@ -20,14 +20,14 @@ supabase_client = create_client(supabase_url, supabase_key)
 def home():
     if 'username' in session:
         username = session['username']
-        groups_query = supabase_client.table('groups').select('groupname').\
-            join('user_groups', 'groups.groupname', 'user_groups.groupname').\
-            eq('user_groups.username', username)
+        groups_query = supabase_client.from_('user_groups').\
+            select('groupname').\
+            eq('username', username)
         groups_response = groups_query.execute()
-        groups = groups_response.get('data', [])
-        messages_query = supabase_client.table('messages').select('*').\
-            join('user_groups', 'messages.groupname', 'user_groups.groupname').\
-            eq('user_groups.username', username)
+        groups = [group['groupname'] for group in groups_response.get('data', [])]
+        messages_query = supabase_client.from_('messages').\
+            select('*').\
+            in_('groupname', groups)
         messages_response = messages_query.execute()
         messages = messages_response.get('data', [])
         return render_template('index.html', username=username, messages=messages, groups=groups)
