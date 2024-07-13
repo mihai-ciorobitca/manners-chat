@@ -56,17 +56,23 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 
   <script>
+    let groupInLocalStorage = localStorage.getItem('group');
+    let messageInput = document.getElementById('message-input');
+    if (!groupInLocalStorage) {
+      messageInput.disabled = true;
+    }
+
     function resizeContainers() {
-      var windowHeight = $(window).innerHeight();
-      var cardHeaderHeight = $('.card-header').outerHeight();
-      var cardFooterHeight = $('.card-footer').outerHeight();
+      let windowHeight = $(window).innerHeight();
+      let cardHeaderHeight = $('.card-header').outerHeight();
+      let cardFooterHeight = $('.card-footer').outerHeight();
 
       if ($(window).width() >= 992) {
-        var messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
-        var groupContainerHeight = windowHeight - cardFooterHeight;
+        let messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
+        let groupContainerHeight = windowHeight - cardFooterHeight;
       } else {
-        var messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
-        var groupContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
+        let messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
+        let groupContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
       }
 
       $('#message-container').css('height', messageContainerHeight + 'px');
