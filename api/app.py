@@ -20,30 +20,17 @@ supabase_client = create_client(supabase_url, supabase_key)
 def home():
     if 'username' in session:
         username = session['username']
-        groups_query = supabase_client.select('groups', {
-            'columns': ['groupname'],
-            'from': 'groups',
-            'join': {
-                'name': 'user_groups',
-                'columns': ['groupname'],
-                'on': 'groups.groupname = user_groups.groupname',
-                'where': f'user_groups.username = {username}'
-            }
-        })
-        groups = groups_query.execute().get('data', [])
-        messages_query = supabase_client.select('*', {
-            'from': 'messages',
-            'join': {
-                'name': 'user_groups',
-                'columns': ['groupname'],
-                'on': 'messages.groupname = user_groups.groupname',
-                'where': f'user_groups.username = {username}'
-            }
-        })
-        messages = messages_query.execute().get('data', [])
-
-        return render_template('index.html', username=session["username"], messages=messages, groups=groups)
-    
+        groups_query = supabase_client.table('groups').select('groupname').\
+            join('user_groups', 'groups.groupname', 'user_groups.groupname').\
+            eq('user_groups.username', username)
+        groups_response = groups_query.execute()
+        groups = groups_response.get('data', [])
+        messages_query = supabase_client.table('messages').select('*').\
+            join('user_groups', 'messages.groupname', 'user_groups.groupname').\
+            eq('user_groups.username', username)
+        messages_response = messages_query.execute()
+        messages = messages_response.get('data', [])
+        return render_template('index.html', username=username, messages=messages, groups=groups)
     return redirect('/login')
 
 @app.route('/login', methods=['GET', 'POST'])
