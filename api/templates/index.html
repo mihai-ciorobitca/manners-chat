@@ -112,7 +112,7 @@
           const senderElement = document.createElement('span');
           senderElement.style.fontWeight = 'bold';
 
-          if (message.username === '{{ username }}') {
+          if (message.user === '{{ username }}') {
             senderElement.innerHTML = 'me<br>';
             messageElement.classList.add('bg-primary', 'text-white', 'ml-auto');
           } else {

@@ -48,6 +48,7 @@ def login():
         if len(user) > 0:
             if check_password_hash(user[0]['password'], password):
                 session['username'] = username
+                session['clearLocalStorage'] = True
                 return redirect('/')
             return render_template('login.html', errorMsg="Invalid password")
         return render_template('login.html', errorMsg="User not found")
