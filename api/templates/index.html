@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,6 +18,7 @@
     }
   </style>
 </head>
+
 <body class="vh-100 d-flex flex-column m-0">
   <div class="container-fluid d-flex flex-column p-0">
     <div class="row flex-grow-1 no-gutters">
@@ -24,7 +26,8 @@
         <div class="card-header p-2">My Groups</div>
         <div class="list-group overflow-auto flex-grow-1">
           {% for group in groups %}
-          <a href="#" class="list-group-item list-group-item-action p-2 group-link" data-group-name="{{group.name}}">{{group.name}}</a>
+          <a href="#" class="list-group-item list-group-item-action p-2 group-link"
+            data-group-name="{{group.name}}">{{group.name}}</a>
           {% endfor %}
         </div>
       </div>
@@ -70,15 +73,24 @@
       $('.list-group').css('height', groupContainerHeight + 'px');
     }
 
-    async function fetchMessages(groupName) {
+    async function fetchMessages(groupname) {
       try {
-        const response = await fetch('/get_messages?group=' + encodeURIComponent(groupName));
+        const response = await fetch('/get_messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ groupname: groupname }),
+        });
+
         if (!response.ok) {
           throw new Error('Failed to fetch messages');
         }
+
         const messages = await response.json();
         const messageContainer = document.getElementById('message-container');
         messageContainer.innerHTML = '';
+
         messages.forEach(message => {
           const messageElement = document.createElement('div');
           messageElement.classList.add('message', 'p-2', 'mb-2', 'rounded');
@@ -89,9 +101,10 @@
             senderElement.innerHTML = 'me<br>';
             messageElement.classList.add('bg-primary', 'text-white', 'ml-auto');
           } else {
-            senderElement.innerHTML = `${message.sender}<br>`;
+            senderElement.innerHTML = `${message.username}<br>`;
             messageElement.classList.add('bg-light', 'mr-auto');
           }
+
           messageElement.appendChild(senderElement);
           messageElement.appendChild(document.createTextNode(message.text));
           messageContainer.appendChild(messageElement);
@@ -100,6 +113,7 @@
         console.error('Error fetching messages:', error);
       }
     }
+
 
     async function sendMessage(event) {
       event.preventDefault();
@@ -119,7 +133,7 @@
           throw new Error('Failed to send message');
         }
         messageInput.value = '';
-        fetchMessages(localStorage.getItem('selectedGroup'));
+        fetchMessages(localStorage.getItem('groupname'));
         const messageContainer = document.getElementById('message-container');
         scrollToBottom(messageContainer);
       } catch (error) {
@@ -132,24 +146,24 @@
     }
 
     setInterval(() => {
-      const selectedGroup = localStorage.getItem('selectedGroup');
-      if (selectedGroup) {
-        fetchMessages(selectedGroup);
+      const groupname = localStorage.getItem('groupname');
+      if (groupname) {
+        fetchMessages(groupname);
       }
     }, 500);
 
     $(window).on('resize', resizeContainers);
     $(document).ready(function () {
       resizeContainers();
-      const selectedGroup = localStorage.getItem('selectedGroup');
-      if (selectedGroup) {
-        $('#current-chat-header').text(selectedGroup);
-        fetchMessages(selectedGroup);
+      const groupname = localStorage.getItem('groupname');
+      if (groupname) {
+        $('#current-chat-header').text(groupname);
+        fetchMessages(groupname);
       }
       $('.group-link').on('click', function (event) {
         event.preventDefault();
         const groupName = $(this).data('group-name');
-        localStorage.setItem('selectedGroup', groupName);
+        localStorage.setItem('groupname', groupName);
         $('#current-chat-header').text(groupName);
         fetchMessages(groupName);
       });
@@ -157,4 +171,5 @@
     });
   </script>
 </body>
+
 </html>

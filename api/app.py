@@ -19,9 +19,31 @@ supabase_client = create_client(supabase_url, supabase_key)
 @app.route('/')
 def home():
     if 'username' in session:
-        groups = supabase_client.table("groups").select('*').execute().data
-        messages = supabase_client.table("messages").select('*').execute().data
+        username = session['username']
+        groups_query = supabase_client.select('groups', {
+            'columns': ['groupname'],
+            'from': 'groups',
+            'join': {
+                'name': 'user_groups',
+                'columns': ['groupname'],
+                'on': 'groups.groupname = user_groups.groupname',
+                'where': f'user_groups.username = {username}'
+            }
+        })
+        groups = groups_query.execute().get('data', [])
+        messages_query = supabase_client.select('*', {
+            'from': 'messages',
+            'join': {
+                'name': 'user_groups',
+                'columns': ['groupname'],
+                'on': 'messages.groupname = user_groups.groupname',
+                'where': f'user_groups.username = {username}'
+            }
+        })
+        messages = messages_query.execute().get('data', [])
+
         return render_template('index.html', username=session["username"], messages=messages, groups=groups)
+    
     return redirect('/login')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -64,14 +86,23 @@ def register():
 @app.route('/send_message', methods=['POST'])
 def send_message():
     data = request.get_json()
-    sender = session["username"]
+    username = session["username"]
     text = data['text']
-    group = "group1"
-    supabase_client.table('messages').insert({"sender": sender, "text": text, "group": group}).execute()
+    groupname = data["groupname"]
+    insert_response = supabase_client.table('messages').insert({
+            'username': username, 
+            'text': text,
+            'groupname': groupname
+        }).execute()
+    if insert_response['error'] is not None:
+        return jsonify({'status': 'Error', 'message': str(insert_response['error'])}), 500
     return jsonify({'status': 'Message sent successfully'})
 
-@app.route('/get_messages', methods=['GET'])
+@app.route('/get_messages', methods=['POST'])
 def get_messages():
-    response = supabase_client.table('messages').select('*').order('date', desc=False).execute()
-    messages = response.data
+    groupname = request.json.get('groupname', '')
+    response = supabase_client.table('messages').select('*').eq('groupname', groupname).order('date', desc=True).execute()
+    if response['error'] is not None:
+        return jsonify({'status': 'Error', 'message': str(response['error'])}), 500
+    messages = response['data']
     return jsonify(messages)
