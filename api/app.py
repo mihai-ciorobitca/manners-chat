@@ -83,14 +83,15 @@ def send_message():
     username = session["username"]
     text = data['text']
     groupname = data["groupname"]
-    insert_response = supabase_client.table('messages').insert({
-            'username': username, 
-            'text': text,
-            'groupname': groupname
-        }).execute()
-    if insert_response['error'] is not None:
-        return jsonify({'status': 'Error', 'message': str(insert_response['error'])}), 500
-    return jsonify({'status': 'Message sent successfully'})
+    try:
+        supabase_client.table('messages').insert({
+                'username': username, 
+                'text': text,
+                'groupname': groupname
+            }).execute()
+        return jsonify({'status': 'Message sent successfully'})
+    except Exception as e:
+        return jsonify({'status': 'Error', 'error': str(e)}), 500
 
 @app.route('/get_messages', methods=['POST'])
 def get_messages():

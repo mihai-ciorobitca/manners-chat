@@ -1,6 +1,4 @@
-<!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,37 +9,52 @@
       max-width: 75%;
     }
 
+    .message-date {
+      font-size: 0.75rem;
+      color: gray;
+    }
+
     html,
     body {
       height: 100%;
       overflow: hidden;
     }
+
+    .bg-whatsapp-green {
+      background-color: #075E54;
+    }
+
+    .bg-whatsapp-light-green {
+      background-color: #DCF8C6;
+    }
+
+    .bg-whatsapp-light-gray {
+      background-color: #ECE5DD;
+    }
   </style>
 </head>
-
 <body class="vh-100 d-flex flex-column m-0">
   <div class="container-fluid d-flex flex-column p-0">
     <div class="row flex-grow-1 no-gutters">
       <div class="col-lg-3 d-none d-lg-flex flex-column border-right p-0">
-        <div class="card-header p-2">My Groups</div>
-        <div class="list-group overflow-auto flex-grow-1">
+        <div class="card-header p-2 bg-whatsapp-green text-white">My Groups</div>
+        <div class="list-group overflow-auto flex-grow-1 bg-whatsapp-light-gray">
           {% for groupname in groups %}
-          <a href="#" class="list-group-item list-group-item-action p-2 group-link"
-            data-group-name="{{groupname}}">{{groupname}}</a>
+          <a href="#" class="list-group-item list-group-item-action p-2 group-link bg-white" data-group-name="{{groupname}}">{{groupname}}</a>
           {% endfor %}
         </div>
       </div>
       <div class="col-lg-9 col-12 d-flex flex-column p-0">
         <div class="card flex-grow-1 d-flex flex-column m-0">
-          <div class="card-header p-2" id="current-chat-header"></div>
-          <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1" id="message-container">
+          <div class="card-header p-2 bg-whatsapp-green text-white" id="current-chat-header"></div>
+          <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1 bg-whatsapp-light-gray" id="message-container">
           </div>
-          <div class="card-footer p-2">
+          <div class="card-footer p-2 bg-whatsapp-light-gray">
             <form id="message-form">
               <div class="input-group">
-                <input type="text" class="form-control" id="message-input" placeholder="Type your message" name="text">
+                <input type="text" class="form-control" id="message-input" placeholder="Type your message" maxlength="500" name="text">
                 <div class="input-group-append">
-                  <button type="submit" class="btn btn-primary">Send</button>
+                  <button type="submit" class="btn btn-primary bg-whatsapp-green border-0">Send</button>
                 </div>
               </div>
             </form>
@@ -109,26 +122,32 @@
         messages.forEach(message => {
           const messageElement = document.createElement('div');
           messageElement.classList.add('message', 'p-2', 'mb-2', 'rounded');
+          
           const senderElement = document.createElement('span');
           senderElement.style.fontWeight = 'bold';
 
-          if (message.user === '{{ username }}') {
+          if (message.username === '{{ username }}') {
             senderElement.innerHTML = 'me<br>';
-            messageElement.classList.add('bg-primary', 'text-white', 'ml-auto');
+            messageElement.classList.add('bg-whatsapp-light-green', 'ml-auto');
           } else {
             senderElement.innerHTML = `${message.username}<br>`;
-            messageElement.classList.add('bg-light', 'mr-auto');
+            messageElement.classList.add('bg-white', 'mr-auto');
           }
+
+          const dateElement = document.createElement('span');
+          dateElement.classList.add('message-date');
+          dateElement.textContent = new Date(message.date).toLocaleString();
 
           messageElement.appendChild(senderElement);
           messageElement.appendChild(document.createTextNode(message.text));
+          messageElement.appendChild(document.createElement('br'));
+          messageElement.appendChild(dateElement);
           messageContainer.appendChild(messageElement);
         });
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
     }
-
 
     async function sendMessage(event) {
       event.preventDefault();
@@ -150,20 +169,18 @@
         messageInput.value = '';
         fetchMessages(localStorage.getItem('groupname'));
         const messageContainer = document.getElementById('message-container');
-        scrollToBottom(messageContainer);
+        messageContainer.scrollTop = messageContainer.scrollHeight; 
       } catch (error) {
         console.error('Error sending message:', error);
       }
-    }
-
-    function scrollToBottom(element) {
-      element.scrollTop = element.scrollHeight;
     }
 
     setInterval(() => {
       const groupname = localStorage.getItem('groupname');
       if (groupname) {
         fetchMessages(groupname);
+        const messageContainer = document.getElementById('message-container');
+        messageContainer.scrollTop = messageContainer.scrollHeight; 
       }
     }, 500);
 
@@ -181,10 +198,11 @@
         localStorage.setItem('groupname', groupName);
         $('#current-chat-header').text(groupName);
         fetchMessages(groupName);
+        const messageContainer = document.getElementById('message-container');
+        messageContainer.scrollTop = messageContainer.scrollHeight; 
       });
       document.getElementById('message-form').addEventListener('submit', sendMessage);
     });
   </script>
 </body>
-
 </html>
