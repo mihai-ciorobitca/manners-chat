@@ -218,7 +218,7 @@
       // Handle click on back button
       $('#back-button').on('click', function (event) {
         event.preventDefault();
-        $('#group').removeClass('d-none').addClass('d-lg-flex'); // Show group container
+        $('#group').removeClass('d-none d-lg-block').addClass('d-lg-flex'); // Show group container on large screens
         $('#message').addClass('d-none'); // Hide message container
       });
 
@@ -228,9 +228,10 @@
         localStorage.setItem('groupname', groupName);
         $('#current-chat-header').text(groupName);
         fetchMessages(groupName, true);
-        $('#group').addClass('d-none').removeClass('d-lg-flex'); // Hide group container
+        $('#group').addClass('d-none d-lg-block').removeClass('d-lg-flex'); // Hide group container on large screens
         $('#message').removeClass('d-none'); // Show message container
       });
+
 
       document.getElementById('message-form').addEventListener('submit', sendMessage);
 
