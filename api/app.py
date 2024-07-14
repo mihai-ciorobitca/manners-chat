@@ -101,3 +101,9 @@ def get_messages():
     if len(response.data) > 0:
         messages = response.data
     return jsonify(messages)
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.pop('username', None)
+    session.pop('clearLocalStorage', None)
+    return redirect('/login')

@@ -1,9 +1,12 @@
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home Page</title>
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
   <style>
     .message {
       max-width: 75%;
@@ -33,34 +36,55 @@
     }
   </style>
 </head>
+
 <body class="vh-100 d-flex flex-column m-0">
   <div class="container-fluid d-flex flex-column p-0">
     <div class="row flex-grow-1 no-gutters">
-      <div class="col-lg-3 d-none d-lg-flex flex-column border-right p-0">
-        <div class="card-header p-2 bg-whatsapp-green text-white">My Groups</div>
-        <div class="list-group overflow-auto flex-grow-1 bg-whatsapp-light-gray">
-          {% for groupname in groups %}
-          <a href="#" class="list-group-item list-group-item-action p-2 group-link bg-white" data-group-name="{{groupname}}">{{groupname}}</a>
-          {% endfor %}
-        </div>
-      </div>
-      <div class="col-lg-9 col-12 d-flex flex-column p-0">
-        <div class="card flex-grow-1 d-flex flex-column m-0">
-          <div class="card-header p-2 bg-whatsapp-green text-white" id="current-chat-header"></div>
-          <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1 bg-whatsapp-light-gray" id="message-container">
+      <div class="container-fluid p-0">
+        <div class="row no-gutters">
+          <div id="group" class="col-lg-3 d-lg-flex d-none flex-column border-right p-0">
+            <div
+              class="card-header-group p-2 bg-whatsapp-green text-white d-flex justify-content-between align-items-center">
+              <span><b>Welcome</b>, {{ username }}</span>
+              <form action="/logout" method="post" class="mb-0">
+                <button type="submit" class="btn p-0 text-white">
+                  Logout <i class="bi bi-door-open"></i>
+                </button>
+              </form>
+            </div>
+            <div class="list-group overflow-auto flex-grow-1 bg-whatsapp-light-gray">
+              {% for groupname in groups %}
+              <a href="#" class="list-group-item list-group-item-action p-2 group-link bg-white"
+                data-group-name="{{groupname}}">{{groupname}}</a>
+              {% endfor %}
+            </div>
           </div>
-          <div class="card-footer p-2 bg-whatsapp-light-gray">
-            <form id="message-form">
-              <div class="input-group">
-                <input type="text" class="form-control" id="message-input" placeholder="Type your message" maxlength="500" name="text">
-                <div class="input-group-append">
-                  <button type="submit" class="btn btn-primary bg-whatsapp-green border-0">Send</button>
-                </div>
+          <div id="message" class="col-lg-9 col-12 d-flex flex-column p-0">
+            <div class="card flex-grow-1 d-flex flex-column m-0">
+              <div
+                class="card-header p-2 bg-whatsapp-green text-white d-flex justify-content-between align-items-center">
+                <span id="current-chat-header"></span>
+                <button id="back-button" class="btn btn-light d-lg-none"><i class="bi bi-arrow-left"></i>
+                  Groups</button>
               </div>
-            </form>
+              <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1 bg-whatsapp-light-gray"
+                id="message-container"></div>
+              <div class="card-footer p-2 bg-whatsapp-light-gray">
+                <form id="message-form">
+                  <div class="input-group">
+                    <input type="text" class="form-control" id="message-input" placeholder="Type your message"
+                      maxlength="500" name="text">
+                    <div class="input-group-append">
+                      <button type="submit" class="btn btn-primary bg-whatsapp-green border-0">Send</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -88,20 +112,16 @@
       var windowHeight = $(window).innerHeight();
       var cardHeaderHeight = $('.card-header').outerHeight();
       var cardFooterHeight = $('.card-footer').outerHeight();
+      var cardHeaderGroupHeight = $('.card-header-group').outerHeight();
 
-      if ($(window).width() >= 992) {
-        var messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
-        var groupContainerHeight = windowHeight - cardFooterHeight;
-      } else {
-        var messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
-        var groupContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
-      }
+      var messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
+      var groupContainerHeight = windowHeight - cardHeaderGroupHeight;
 
       $('#message-container').css('height', messageContainerHeight + 'px');
       $('.list-group').css('height', groupContainerHeight + 'px');
     }
 
-    async function fetchMessages(groupname) {
+    async function fetchMessages(groupname, scrollToBottom = false) {
       try {
         const response = await fetch('/get_messages', {
           method: 'POST',
@@ -116,13 +136,14 @@
         }
 
         const messages = await response.json();
-        const messageContainer = document.getElementById('message-container');
+        let messageContainer = document.getElementById('message-container');
+
         messageContainer.innerHTML = '';
 
         messages.forEach(message => {
           const messageElement = document.createElement('div');
           messageElement.classList.add('message', 'p-2', 'mb-2', 'rounded');
-          
+
           const senderElement = document.createElement('span');
           senderElement.style.fontWeight = 'bold';
 
@@ -144,6 +165,11 @@
           messageElement.appendChild(dateElement);
           messageContainer.appendChild(messageElement);
         });
+
+        if (scrollToBottom) {
+          scrollToBottomFunc();
+        }
+
       } catch (error) {
         console.error('Error fetching messages:', error);
       }
@@ -167,22 +193,16 @@
           throw new Error('Failed to send message');
         }
         messageInput.value = '';
-        fetchMessages(localStorage.getItem('groupname'));
-        const messageContainer = document.getElementById('message-container');
-        messageContainer.scrollTop = messageContainer.scrollHeight; 
+        await fetchMessages(localStorage.getItem('groupname'), true);
       } catch (error) {
         console.error('Error sending message:', error);
       }
     }
 
-    setInterval(() => {
-      const groupname = localStorage.getItem('groupname');
-      if (groupname) {
-        fetchMessages(groupname);
-        const messageContainer = document.getElementById('message-container');
-        messageContainer.scrollTop = messageContainer.scrollHeight; 
-      }
-    }, 500);
+    function scrollToBottomFunc() {
+      let messageContainer = document.getElementById('message-container');
+      messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
 
     $(window).on('resize', resizeContainers);
     $(document).ready(function () {
@@ -190,19 +210,40 @@
       const groupname = localStorage.getItem('groupname');
       if (groupname) {
         $('#current-chat-header').text(groupname);
-        fetchMessages(groupname);
+        fetchMessages(groupname, true);
+      } else {
+        $('#current-chat-header').text('No Group');
       }
+
+      // Handle click on back button
+      $('#back-button').on('click', function (event) {
+        event.preventDefault();
+        $('#group').removeClass('d-none').addClass('d-lg-flex'); // Show group container
+        $('#message').addClass('d-none'); // Hide message container
+      });
+
       $('.group-link').on('click', function (event) {
         event.preventDefault();
         const groupName = $(this).data('group-name');
         localStorage.setItem('groupname', groupName);
         $('#current-chat-header').text(groupName);
-        fetchMessages(groupName);
-        const messageContainer = document.getElementById('message-container');
-        messageContainer.scrollTop = messageContainer.scrollHeight; 
+        fetchMessages(groupName, true);
+        $('#group').addClass('d-none').removeClass('d-lg-flex'); // Hide group container
+        $('#message').removeClass('d-none'); // Show message container
       });
+
       document.getElementById('message-form').addEventListener('submit', sendMessage);
+
+      // Periodically fetch messages for the current group
+      setInterval(() => {
+        const groupname = localStorage.getItem('groupname');
+        if (groupname) {
+          fetchMessages(groupname);
+        }
+      }, 500);
     });
+
   </script>
 </body>
+
 </html>
