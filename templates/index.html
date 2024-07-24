@@ -5,6 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home Page</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
   <style>
@@ -84,29 +85,121 @@
           </div>
         </div>
       </div>
-
     </div>
   </div>
-
   <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
   <script>
-    var currentChatHeader = document.getElementById("current-chat-header");
-    var groupName = localStorage.getItem("groupname");
+    var socket = io();
 
-    if (groupName) {
-      currentChatHeader.textContent = groupName;
-    } else {
-      currentChatHeader.textContent = "No Group";
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+      var currentChatHeader = document.getElementById("current-chat-header");
+      var groupName = localStorage.getItem("groupname");
+      var username = '{{ username }}';
 
-    var groupInLocalStorage = localStorage.getItem('groupname');
-    var messageInput = document.getElementById('message-input');
-    if (!groupInLocalStorage) {
-      messageInput.disabled = true;
-    }
+      if (groupName) {
+        currentChatHeader.textContent = groupName;
+        socket.emit('get_messages', { groupname: groupName });
+      } else {
+        currentChatHeader.textContent = "No Group";
+      }
+
+      var messageInput = document.getElementById('message-input');
+      if (!groupName) {
+        messageInput.disabled = true;
+      }
+
+      $(window).on('resize', resizeContainers);
+      resizeContainers();
+
+      $('#back-button').on('click', function (event) {
+        event.preventDefault();
+        $('#group').removeClass('d-none d-lg-block').addClass('d-lg-flex');
+        $('#message').addClass('d-none');
+      });
+
+      $('.group-link').on('click', function (event) {
+        event.preventDefault();
+        const groupName = $(this).data('group-name');
+        localStorage.setItem('groupname', groupName);
+        $('#current-chat-header').text(groupName);
+        $('#group').addClass('d-none d-lg-block').removeClass('d-lg-flex');
+        $('#message').removeClass('d-none');
+        messageInput.disabled = false;
+        $('#message-container').empty();
+        socket.emit('get_messages', { groupname: groupName });
+      });
+
+      document.getElementById('message-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = messageInput.value.trim();
+        if (text === '') return;
+        const msgData = { text: text, groupname: localStorage.getItem('groupname'), username: username, date: new Date() };
+        socket.emit('send_message', msgData);
+        messageInput.value = '';
+      });
+
+      socket.on('receive_message', (data) => {
+        let messageContainer = document.getElementById('message-container');
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message', 'p-2', 'mb-2', 'rounded');
+
+        const senderElement = document.createElement('span');
+        senderElement.style.fontWeight = 'bold';
+
+        if (data.username === username) {
+          senderElement.innerHTML = 'me<br>';
+          messageElement.classList.add('bg-whatsapp-light-green', 'ml-auto');
+        } else {
+          senderElement.innerHTML = `${data.username}<br>`;
+          messageElement.classList.add('bg-white', 'mr-auto');
+        }
+
+        const dateElement = document.createElement('span');
+        dateElement.classList.add('message-date');
+        dateElement.textContent = new Date(data.date).toLocaleString();
+
+        messageElement.appendChild(senderElement);
+        messageElement.appendChild(document.createTextNode(data.text));
+        messageElement.appendChild(document.createElement('br'));
+        messageElement.appendChild(dateElement);
+        messageContainer.appendChild(messageElement);
+
+        scrollToBottomFunc();
+      });
+
+      socket.on('message_list', (messages) => {
+        let messageContainer = document.getElementById('message-container');
+        messages.forEach((data) => {
+          const messageElement = document.createElement('div');
+          messageElement.classList.add('message', 'p-2', 'mb-2', 'rounded');
+
+          const senderElement = document.createElement('span');
+          senderElement.style.fontWeight = 'bold';
+
+          if (data.username === username) {
+            senderElement.innerHTML = 'me<br>';
+            messageElement.classList.add('bg-whatsapp-light-green', 'ml-auto');
+          } else {
+            senderElement.innerHTML = `${data.username}<br>`;
+            messageElement.classList.add('bg-white', 'mr-auto');
+          }
+
+          const dateElement = document.createElement('span');
+          dateElement.classList.add('message-date');
+          dateElement.textContent = new Date(data.date).toLocaleString();
+
+          messageElement.appendChild(senderElement);
+          messageElement.appendChild(document.createTextNode(data.text));
+          messageElement.appendChild(document.createElement('br'));
+          messageElement.appendChild(dateElement);
+          messageContainer.appendChild(messageElement);
+        });
+
+        scrollToBottomFunc();
+      });
+    });
 
     function resizeContainers() {
       var windowHeight = $(window).innerHeight();
@@ -121,129 +214,10 @@
       $('.list-group').css('height', groupContainerHeight + 'px');
     }
 
-    async function fetchMessages(groupname, scrollToBottom = false) {
-      try {
-        const response = await fetch('/get_messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ groupname: groupname }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch messages');
-        }
-
-        const messages = await response.json();
-        let messageContainer = document.getElementById('message-container');
-
-        messageContainer.innerHTML = '';
-
-        messages.forEach(message => {
-          const messageElement = document.createElement('div');
-          messageElement.classList.add('message', 'p-2', 'mb-2', 'rounded');
-
-          const senderElement = document.createElement('span');
-          senderElement.style.fontWeight = 'bold';
-
-          if (message.username === '{{ username }}') {
-            senderElement.innerHTML = 'me<br>';
-            messageElement.classList.add('bg-whatsapp-light-green', 'ml-auto');
-          } else {
-            senderElement.innerHTML = `${message.username}<br>`;
-            messageElement.classList.add('bg-white', 'mr-auto');
-          }
-
-          const dateElement = document.createElement('span');
-          dateElement.classList.add('message-date');
-          dateElement.textContent = new Date(message.date).toLocaleString();
-
-          messageElement.appendChild(senderElement);
-          messageElement.appendChild(document.createTextNode(message.text));
-          messageElement.appendChild(document.createElement('br'));
-          messageElement.appendChild(dateElement);
-          messageContainer.appendChild(messageElement);
-        });
-
-        if (scrollToBottom) {
-          scrollToBottomFunc();
-        }
-
-      } catch (error) {
-        console.error('Error fetching messages:', error);
-      }
-    }
-
-    async function sendMessage(event) {
-      event.preventDefault();
-      const messageInput = document.getElementById('message-input');
-      const message = messageInput.value.trim();
-      if (message === '') return;
-
-      try {
-        const response = await fetch('/send_message', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ text: message, groupname: localStorage.getItem('groupname') }),
-        });
-        if (!response.ok) {
-          throw new Error('Failed to send message');
-        }
-        messageInput.value = '';
-        await fetchMessages(localStorage.getItem('groupname'), true);
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
-    }
-
     function scrollToBottomFunc() {
       let messageContainer = document.getElementById('message-container');
       messageContainer.scrollTop = messageContainer.scrollHeight;
     }
-
-    $(window).on('resize', resizeContainers);
-    $(document).ready(function () {
-      resizeContainers();
-      const groupname = localStorage.getItem('groupname');
-      if (groupname) {
-        $('#current-chat-header').text(groupname);
-        fetchMessages(groupname, true);
-      } else {
-        $('#current-chat-header').text('No Group');
-      }
-
-      // Handle click on back button
-      $('#back-button').on('click', function (event) {
-        event.preventDefault();
-        $('#group').removeClass('d-none d-lg-block').addClass('d-lg-flex'); // Show group container on large screens
-        $('#message').addClass('d-none'); // Hide message container
-      });
-
-      $('.group-link').on('click', function (event) {
-        event.preventDefault();
-        const groupName = $(this).data('group-name');
-        localStorage.setItem('groupname', groupName);
-        $('#current-chat-header').text(groupName);
-        fetchMessages(groupName, true);
-        $('#group').addClass('d-none d-lg-block').removeClass('d-lg-flex'); // Hide group container on large screens
-        $('#message').removeClass('d-none'); // Show message container
-      });
-
-
-      document.getElementById('message-form').addEventListener('submit', sendMessage);
-
-      // Periodically fetch messages for the current group
-      setInterval(() => {
-        const groupname = localStorage.getItem('groupname');
-        if (groupname) {
-          fetchMessages(groupname);
-        }
-      }, 500);
-    });
-
   </script>
 </body>
 

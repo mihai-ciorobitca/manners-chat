@@ -1,43 +1,33 @@
-from flask import Flask, render_template, request, session, redirect, jsonify
+from flask import Flask, render_template, request, session, redirect
 from supabase import create_client
 from werkzeug.security import check_password_hash, generate_password_hash
 from dotenv import load_dotenv
 from os import getenv
 from requests import post
+from flask_socketio import SocketIO, emit, join_room, leave_room
 
 load_dotenv()
 
 app = Flask(__name__)
-
-app.secret_key ='secret_key'
+app.secret_key = 'secret_key'
 
 supabase_url = getenv('SUPABASE_URL')
 supabase_key = getenv('SUPABASE_KEY')
 recaptcha_secret = getenv('RECAPTCHA_SECRET')
 supabase_client = create_client(supabase_url, supabase_key)
 
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 @app.route('/')
 def home():
     if 'username' in session:
         username = session['username']
-        groups_query = supabase_client.from_('user_groups').\
-            select('groupname').\
-            eq('username', username)
+        groups_query = supabase_client.from_('user_groups').select('groupname').eq('username', username)
         groups_response = groups_query.execute()
-        groups = []
-        if len(groups_response.data) > 0:
-            groups = [group['groupname'] for group in groups_response.data]
-        messages_query = supabase_client.from_('messages').\
-            select('*').\
-            in_('groupname', groups)
-        messages_response = messages_query.execute()
-        messages = []
-        if len(messages_response.data) > 0:
-            messages = messages_response.data
-        print(messages)
-        return render_template('index.html', username=username, messages=messages, groups=groups)
+        groups = [group['groupname'] for group in groups_response.data] if groups_response.data else []
+        
+        return render_template('index.html', username=username, groups=groups)
     return redirect('/login')
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -73,37 +63,38 @@ def register():
 
         password = request.form['password']
         supabase_client.table('users').insert({"username": username, "password": generate_password_hash(password)}).execute()
-        return redirect('/login')   
+        return redirect('/login')
     return render_template('register.html', errorMsg="")
 
-
-@app.route('/send_message', methods=['POST'])
-def send_message():
-    data = request.get_json()
-    username = session["username"]
-    text = data['text']
-    groupname = data["groupname"]
-    try:
-        supabase_client.table('messages').insert({
-                'username': username, 
+@socketio.on('send_message')
+def send_message(data):
+    username = session.get('username')
+    if username:
+        text = data['text']
+        groupname = data['groupname']
+        try:
+            supabase_client.table('messages').insert({
+                'username': username,
                 'text': text,
-                'groupname': groupname
+                'groupname': groupname,
+                'date': data['date']
             }).execute()
-        return jsonify({'status': 'Message sent successfully'})
-    except Exception as e:
-        return jsonify({'status': 'Error', 'error': str(e)}), 500
+            emit('receive_message', data, groupname=groupname, broadcast=True)
+        except Exception as e:
+            print(f"Error: {e}")
 
-@app.route('/get_messages', methods=['POST'])
-def get_messages():
-    groupname = request.json.get('groupname', '')
+@socketio.on('get_messages')
+def get_messages(data):
+    groupname = data['groupname']
     response = supabase_client.table('messages').select('*').eq('groupname', groupname).order('date').execute()
-    messages = []
-    if len(response.data) > 0:
-        messages = response.data
-    return jsonify(messages)
+    messages = response.data if response.data else []
+    emit('message_list', messages)
 
 @app.route('/logout', methods=['POST'])
 def logout():
     session.pop('username', None)
     session.pop('clearLocalStorage', None)
     return redirect('/login')
+
+if __name__ == '__main__':
+    socketio.run(app, debug=True)
