@@ -3,4 +3,4 @@ supabase
 python-dotenv
 werkzeug
 requests
-gunicorn
+Flask-SocketIO
