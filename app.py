@@ -95,6 +95,3 @@ def logout():
     session.pop('username', None)
     session.pop('clearLocalStorage', None)
     return redirect('/login')
-
-if __name__ == '__main__':
-    socketio.run(app)
