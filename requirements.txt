@@ -7,3 +7,4 @@ Flask-SocketIO
 eventlet
 gunicorn
 flask_session
+pyotp

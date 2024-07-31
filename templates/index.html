@@ -38,18 +38,30 @@
               <form action="/logout" method="POST">
                 <button type="submit" class="btn p-0 text-warning">
                   Logout <i class="bi bi-door-open"></i>
-                </button>                
+                </button>
               </form>
             </div>
+            {% if session.username == 'admin' %}
+            <div class="d-flex align-items-stretch border-bottom">
+              <form action="/add-group" method="POST" class="d-flex w-100">
+                <input type="text" name="groupname" placeholder="Enter group name" class="form-control me-3 flex-grow-1"
+                  required>
+                <button type="submit" class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center">
+                  Add
+                </button>
+              </form>
+            </div>
+            {% endif %}
             <div class="list-group overflow-auto flex-grow-1 bg-dark">
-              {% for groupname in groups %}
+              {% for group in groups %}
               <div class="d-flex align-items-stretch border-bottom">
                 <a href="#"
                   class="list-group-item list-group-item-action group-link bg-dark text-white flex-grow-1 border-0"
-                  data-group-name="{{ groupname }}">
-                  {{ groupname }}</a>
-                <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center" data-group-name="{{groupname.sharelink}}"
-                  onclick="shareGroup('{{groupname.sharelink}}')"><b>Share</b></button>
+                  data-group-name="{{ group.groupname }}">
+                  {{ group["groupname"] }}</a>
+                <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
+                  data-group-name="{{ group.sharelink }}"
+                  onclick="shareGroup('{{ group.sharelink }}', '{{group.groupname}}')"><b>Share</b></button>
               </div>
               {% endfor %}
             </div>
@@ -103,7 +115,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       let currentChatHeader = document.getElementById("current-chat-header");
-      let groupName = "{{ session.get('groupname') }}";
+      let groupName = "{{ groupname }}";
       let username = '{{ username }}';
       if (groupName) {
         currentChatHeader.textContent = groupName;
@@ -227,8 +239,14 @@
       messageContainer.scrollTop = messageContainer.scrollHeight;
     }
 
-    function shareGroup(groupName) {
-      alert("Share link for " + groupName);
+    function shareGroup(sharelink, groupname) {
+      const shareLink = `https://super-chatter.adaptable.app/groups/${encodeURIComponent(sharelink)}`;
+      navigator.clipboard.writeText(shareLink).then(() => {
+        alert("Share link for " + groupname + " copied to clipboard");
+      }).catch(err => {
+        console.error("Failed to copy link: ", err);
+        alert("Failed to copy share link to clipboard.");
+      });
     }
   </script>
 </body>

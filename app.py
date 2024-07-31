@@ -6,6 +6,7 @@ from os import getenv
 from requests import post
 from flask_session import Session
 from flask_socketio import SocketIO, emit
+import pyotp
 
 load_dotenv()
 
@@ -25,18 +26,32 @@ socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False)
 def home():
     if 'username' in session:
         username = session['username']
-        groupname = session.get("groupname", None)
-        groupmessage = session.get("groupmessage", None)
-        groups_query = supabase_client.from_('user_groups').select('groupname,sharelink')
+        groupname = session.get("groupname", "No Group Open")
+        groupmessage = session.get("groupmessage", "Hello Group")
+        groups_query = supabase_client.from_(
+            'user_groups').select('groupname,sharelink')
         if session["username"] != 'admin':
-            groups_query = groups_query.eq('username', username)
-        groups_response = groups_query.execute()
-        print(groups_response.data)
-        groups = {group['groupname']: group['sharelink']
-                  for group in groups_response.data} if groups_response.data else {}
-        groups = sorted(list(set(groups)))
+            groups = groups_query.eq(
+                'username', username).execute().data
+        else:
+            groups = supabase_client.from_('groups').select(
+                'groupname,sharelink').execute().data
+        print(groups)
         return render_template('index.html', username=username, groups=groups, groupname=groupname, groupmessage=groupmessage)
     return redirect('/login')
+
+@app.route("/groups/<uuid:sharelink>")
+def join_group(sharelink):
+    if 'username' in session:
+        username = session["username"]
+        if username == 'admin':
+            return redirect("/")
+        response = supabase_client.table("groups").select("groupname").eq("sharelink", str(sharelink)).execute().data
+        if len(response) == 0:
+            return redirect("/")
+        groupname = response[0]["groupname"]
+        supabase_client.table("user_groups").insert({"groupname": groupname, "username": username,"sharelink": sharelink}).execute()
+    return redirect("/login")
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -74,10 +89,18 @@ def register():
         if len(user) > 0:
             return render_template('register.html', errorMsg="Username already exists")
         password = request.form['password']
+        email = request.form['email']
         supabase_client.table('users').insert(
-            {"username": username, "password": generate_password_hash(password)}).execute()
+            {"username": username, "password": generate_password_hash(password), "email": email, "otp": pyotp.random_base32()}).execute()
         return redirect('/login')
     return render_template('register.html', errorMsg="")
+
+
+@app.route("/add-group", methods=["POST"])
+def add_group():
+    groupname = request.form["groupname"]
+    supabase_client.table("groups").insert({"groupname": groupname}).execute()
+    return redirect("/")
 
 
 @socketio.on('send_message')
@@ -103,7 +126,11 @@ def get_messages(data):
     groupname = data['groupname']
     session["groupname"] = groupname
     groupmessage = supabase_client.from_("groups").select(
-        "groupmessage").eq("groupname", groupname).execute().data[0]["groupmessage"]
+        "groupmessage").eq("groupname", groupname).execute().data
+    if len(groupmessage) > 0:
+        groupmessage = groupmessage[0]["groupmessage"]
+    else:
+        groupmessage = ""
     session["groupmessage"] = groupmessage
     response = supabase_client.table('messages').select(
         '*').eq('groupname', groupname).order('date').execute()
@@ -125,3 +152,24 @@ def update_message():
         {"groupmessage": groupmessage}).eq("groupname", groupname).execute()
     session["groupmessage"] = groupmessage
     return redirect("/")
+
+
+@app.route("/reset", methods=["POST", "GET"])
+def reset():
+    if request.method == "POST":
+        otp = request.form["otp"]
+        users = supabase_client.table('users').select(
+            "*").eq('otp', otp).execute().data
+        if len(users) > 0:
+            user = users[0]
+            print(user)
+            secret = request.form["secret"]
+            totp = pyotp.TOTP(user['otp'])
+            if totp.verify(secret):
+                new_password = request.form["new-password"]
+                supabase_client.table("users").update({"password": generate_password_hash(
+                    new_password)}).eq("username", user["username"]).execute()
+                return redirect("/login")
+            return render_template("reset.html", errorMsg="Wrong secret")
+        return render_template("reset.html", errorMsg="OPT not found")
+    return render_template("reset.html", errorMsg="")
