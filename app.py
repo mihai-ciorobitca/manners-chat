@@ -12,7 +12,6 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'secret_key'
-app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 supabase_url = getenv('SUPABASE_URL')
 supabase_key = getenv('SUPABASE_KEY')
