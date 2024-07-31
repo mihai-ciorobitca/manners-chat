@@ -6,3 +6,4 @@ requests
 Flask-SocketIO
 eventlet
 gunicorn
+flask_session

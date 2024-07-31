@@ -11,7 +11,7 @@
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
 </head>
 
-<body class="d-flex align-items-center justify-content-center vh-100">
+<body class="d-flex align-items-center justify-content-center vh-100 bg-dark">
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-md-6 col-lg-4">
@@ -29,7 +29,7 @@
               <div class="form-group">
                 <input required class="form-control" type="password" placeholder="Enter Password" name="password">
               </div>
-              <button type="submit" class="btn btn-success btn-block">Login <i class="fas fa-unlock-alt"></i></button>
+              <button type="submit" class="btn btn-warning text-dark btn-block">Login <i class="fas fa-unlock-alt"></i></button>
             </form>
             {% if errorMsg != "" %}
             <div id="error-message" class="alert alert-danger mt-3" role="alert">{{ errorMsg }}</div>

@@ -23,60 +23,68 @@
       height: 100%;
       overflow: hidden;
     }
-
-    .bg-whatsapp-green {
-      background-color: #075E54;
-    }
-
-    .bg-whatsapp-light-green {
-      background-color: #DCF8C6;
-    }
-
-    .bg-whatsapp-light-gray {
-      background-color: #ECE5DD;
-    }
   </style>
 </head>
 
-<body class="vh-100 d-flex flex-column m-0">
+<body class="vh-100 d-flex flex-column m-0 bg-dark">
   <div class="container-fluid d-flex flex-column p-0">
     <div class="row flex-grow-1 no-gutters">
       <div class="container-fluid p-0">
         <div class="row no-gutters">
           <div id="group" class="col-lg-3 d-lg-flex d-none flex-column border-right p-0">
             <div
-              class="card-header-group p-2 bg-whatsapp-green text-white d-flex justify-content-between align-items-center">
+              class="card-header-group p-2 bg-dark text-warning d-flex justify-content-between align-items-center border-bottom">
               <span><b>Welcome</b>, {{ username }}</span>
-              <form action="/logout" method="post" class="mb-0">
-                <button type="submit" class="btn p-0 text-white">
+              <form action="/logout" method="POST">
+                <button type="submit" class="btn p-0 text-warning">
                   Logout <i class="bi bi-door-open"></i>
-                </button>
+                </button>                
               </form>
             </div>
-            <div class="list-group overflow-auto flex-grow-1 bg-whatsapp-light-gray">
+            <div class="list-group overflow-auto flex-grow-1 bg-dark">
               {% for groupname in groups %}
-              <a href="#" class="list-group-item list-group-item-action p-2 group-link bg-white"
-                data-group-name="{{groupname}}">{{groupname}}</a>
+              <div class="d-flex align-items-stretch border-bottom">
+                <a href="#"
+                  class="list-group-item list-group-item-action group-link bg-dark text-white flex-grow-1 border-0"
+                  data-group-name="{{ groupname }}">
+                  {{ groupname }}</a>
+                <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center" data-group-name="{{groupname.sharelink}}"
+                  onclick="shareGroup('{{groupname.sharelink}}')"><b>Share</b></button>
+              </div>
               {% endfor %}
             </div>
           </div>
-          <div id="message" class="col-lg-9 col-12 d-flex flex-column p-0">
-            <div class="card flex-grow-1 d-flex flex-column m-0">
+          <div id="message" class="col-lg-9 col-12 d-flex flex-column p-0 bg-dark">
+            <div class="card flex-grow-1 d-flex flex-column mb-2 bg-dark">
               <div
-                class="card-header p-2 bg-whatsapp-green text-white d-flex justify-content-between align-items-center">
-                <span id="current-chat-header"></span>
-                <button id="back-button" class="btn btn-light d-lg-none"><i class="bi bi-arrow-left"></i>
-                  Groups</button>
+                class="card-header-chat p-2 bg-dark text-white d-flex justify-content-between align-items-center border-bottom">
+                <b><span id="current-chat-header" class="text-warning"></span></b>
+                <button id="back-button" class="btn bg-warning text-dark d-lg-none border-0"><i
+                    class="bi bi-arrow-left"></i>
+                  <b>Groups</b></button>
               </div>
-              <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1 bg-whatsapp-light-gray"
-                id="message-container"></div>
-              <div class="card-footer p-2 bg-whatsapp-light-gray">
+              <div
+                class="card-header message-header bg-dark text-white d-flex justify-content-between align-items-center border-bottom mb-2">
+                <form action="/update-message" class="d-flex align-items-center w-100" method="post">
+                  <input name="groupmessage" id="groupmessage"
+                    value="{{groupmessage if groupmessage else 'Hello everyone!'}}" maxlength="30"
+                    class="bg-dark text-white border-0 flex-grow-1 focus-ring" style="outline: none;"
+                    placeholder="Enter your message here" {%if session.username !='admin' %} disabled {% endif %}>
+                  {% if session.username == "admin" %}
+                  <button class="btn btn-warning text-dark ms-2"><b>Update</b></button>
+                  <input type="hidden" name="groupname" value="{{groupname}}">
+                  {% endif %}
+                </form>
+              </div>
+              <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1 bg-dark" id="message-container">
+              </div>
+              <div class="card-footer p-2 bg-dark mb-2 border-top">
                 <form id="message-form">
-                  <div class="input-group">
+                  <div class="input-group mb-2">
                     <input type="text" class="form-control" id="message-input" placeholder="Type your message"
                       maxlength="500" name="text">
                     <div class="input-group-append">
-                      <button type="submit" class="btn btn-primary bg-whatsapp-green border-0">Send</button>
+                      <button type="submit" class="btn bg-warning text-dark border-0"><b>Send</b></button>
                     </div>
                   </div>
                 </form>
@@ -91,13 +99,12 @@
   <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
   <script>
-    var socket = io();
+    let socket = io();
 
     document.addEventListener('DOMContentLoaded', () => {
-      var currentChatHeader = document.getElementById("current-chat-header");
-      var groupName = localStorage.getItem("groupname");
-      var username = '{{ username }}';
-
+      let currentChatHeader = document.getElementById("current-chat-header");
+      let groupName = "{{ session.get('groupname') }}";
+      let username = '{{ username }}';
       if (groupName) {
         currentChatHeader.textContent = groupName;
         socket.emit('get_messages', { groupname: groupName });
@@ -105,7 +112,8 @@
         currentChatHeader.textContent = "No Group";
       }
 
-      var messageInput = document.getElementById('message-input');
+
+      let messageInput = document.getElementById('message-input');
       if (!groupName) {
         messageInput.disabled = true;
       }
@@ -122,7 +130,6 @@
       $('.group-link').on('click', function (event) {
         event.preventDefault();
         const groupName = $(this).data('group-name');
-        localStorage.setItem('groupname', groupName);
         $('#current-chat-header').text(groupName);
         $('#group').addClass('d-none d-lg-block').removeClass('d-lg-flex');
         $('#message').removeClass('d-none');
@@ -135,7 +142,7 @@
         event.preventDefault();
         const text = messageInput.value.trim();
         if (text === '') return;
-        const msgData = { text: text, groupname: localStorage.getItem('groupname'), username: username, date: new Date() };
+        const msgData = { text: text, username: username, date: new Date() };
         socket.emit('send_message', msgData);
         messageInput.value = '';
       });
@@ -150,7 +157,7 @@
 
         if (data.username === username) {
           senderElement.innerHTML = 'me<br>';
-          messageElement.classList.add('bg-whatsapp-light-green', 'ml-auto');
+          messageElement.classList.add('bg-warning', 'ml-auto');
         } else {
           senderElement.innerHTML = `${data.username}<br>`;
           messageElement.classList.add('bg-white', 'mr-auto');
@@ -180,7 +187,7 @@
 
           if (data.username === username) {
             senderElement.innerHTML = 'me<br>';
-            messageElement.classList.add('bg-whatsapp-light-green', 'ml-auto');
+            messageElement.classList.add('bg-warning', 'ml-auto');
           } else {
             senderElement.innerHTML = `${data.username}<br>`;
             messageElement.classList.add('bg-white', 'mr-auto');
@@ -202,13 +209,14 @@
     });
 
     function resizeContainers() {
-      var windowHeight = $(window).innerHeight();
-      var cardHeaderHeight = $('.card-header').outerHeight();
-      var cardFooterHeight = $('.card-footer').outerHeight();
-      var cardHeaderGroupHeight = $('.card-header-group').outerHeight();
+      let windowHeight = $(window).innerHeight();
+      let cardHeaderHeight = $('.card-header-chat').outerHeight();
+      let messageHeaderHeight = $('.message-header').outerHeight();
+      let cardFooterHeight = $('.card-footer').outerHeight();
+      let cardHeaderGroupHeight = $('.card-header-group').outerHeight();
 
-      var messageContainerHeight = windowHeight - cardHeaderHeight - cardFooterHeight;
-      var groupContainerHeight = windowHeight - cardHeaderGroupHeight;
+      let messageContainerHeight = windowHeight - cardHeaderHeight - messageHeaderHeight - cardFooterHeight;
+      let groupContainerHeight = windowHeight - cardHeaderGroupHeight;
 
       $('#message-container').css('height', messageContainerHeight + 'px');
       $('.list-group').css('height', groupContainerHeight + 'px');
@@ -217,6 +225,10 @@
     function scrollToBottomFunc() {
       let messageContainer = document.getElementById('message-container');
       messageContainer.scrollTop = messageContainer.scrollHeight;
+    }
+
+    function shareGroup(groupName) {
+      alert("Share link for " + groupName);
     }
   </script>
 </body>
