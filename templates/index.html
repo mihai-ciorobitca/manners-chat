@@ -40,6 +40,8 @@
                   Logout <i class="bi bi-door-open"></i>
                 </button>
               </form>
+              <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
+                  onclick="copyOTP('{{otp}}')"><b>OTP</b></button>
             </div>
             {% if session.username == 'admin' %}
             <div class="d-flex align-items-stretch border-bottom">
@@ -246,6 +248,15 @@
       }).catch(err => {
         console.error("Failed to copy link: ", err);
         alert("Failed to copy share link to clipboard.");
+      });
+    }
+
+    function copyOTP(otp) {
+      navigator.clipboard.writeText(otp).then(() => {
+        alert("OTP copied to clipboard");
+      }).catch(err => {
+        console.error("Failed to copy link: ", err);
+        alert("Failed to copy copy OTP to clipboard.");
       });
     }
   </script>
