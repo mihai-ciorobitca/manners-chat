@@ -51,7 +51,8 @@ def join_group(sharelink):
         if len(response) == 0:
             return redirect("/")
         groupname = response[0]["groupname"]
-        supabase_client.table("user_groups").insert({"groupname": groupname, "username": username, "sharelink": sharelink}).execute()
+        supabase_client.table("user_groups").insert({"groupname": groupname, "username": username, "sharelink": str(sharelink)}).execute()
+        return redirect("/")
     return redirect("/login")
 
 @app.route('/login', methods=['GET', 'POST'])
