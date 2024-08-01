@@ -130,7 +130,7 @@ def send_message(data):
                 'groupname': groupname,
                 'date': data['date']
             }).execute()
-            emit('receive_message', data, room=groupname, broadcast=True)
+            emit('receive_message', data, broadcast=True)
         except Exception as e:
             print(f"Error: {e}")
 
