@@ -8,3 +8,7 @@ eventlet
 gunicorn
 flask_session
 pyotp
+flask_sqlalchemy
+psycopg2-binary
+pylibmc
+Flask-PyMongo
