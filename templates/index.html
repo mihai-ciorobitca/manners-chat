@@ -41,7 +41,7 @@
                 </button>
               </form>
               <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
-                  onclick="copyOTP('{{otp}}')"><b>OTP</b></button>
+                onclick="copyOTP('{{otp}}')"><b>OTP</b></button>
             </div>
             {% if session.username == 'admin' %}
             <div class="d-flex align-items-stretch border-bottom">
@@ -181,8 +181,11 @@
         dateElement.classList.add('message-date');
         dateElement.textContent = new Date(data.date).toLocaleString();
 
+        const textElement = document.createElement('span');
+        textElement.innerHTML = convertTextToLinks(data.text);
+
         messageElement.appendChild(senderElement);
-        messageElement.appendChild(document.createTextNode(data.text));
+        messageElement.appendChild(textElement);
         messageElement.appendChild(document.createElement('br'));
         messageElement.appendChild(dateElement);
         messageContainer.appendChild(messageElement);
@@ -211,8 +214,11 @@
           dateElement.classList.add('message-date');
           dateElement.textContent = new Date(data.date).toLocaleString();
 
+          const textElement = document.createElement('span');
+          textElement.innerHTML = convertTextToLinks(data.text);
+
           messageElement.appendChild(senderElement);
-          messageElement.appendChild(document.createTextNode(data.text));
+          messageElement.appendChild(textElement);
           messageElement.appendChild(document.createElement('br'));
           messageElement.appendChild(dateElement);
           messageContainer.appendChild(messageElement);
@@ -220,6 +226,7 @@
 
         scrollToBottomFunc();
       });
+
     });
 
     function resizeContainers() {
@@ -259,6 +266,12 @@
         alert("Failed to copy copy OTP to clipboard.");
       });
     }
+
+    function convertTextToLinks(text) {
+      const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+      return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>');
+    }
+
   </script>
 </body>
 
