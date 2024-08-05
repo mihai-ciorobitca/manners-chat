@@ -50,12 +50,11 @@ def home():
         else:
             groups = supabase_client.from_('groups').select(
                 'groupname,sharelink').execute().data
-        print(otp)
-        return render_template('index.html', 
-                username=username, groups=groups,
-                groupname=groupname, groupmessage=groupmessage,
-                otp=otp
-            )
+        return render_template('index.html',
+                               username=username, groups=groups,
+                               groupname=groupname, groupmessage=groupmessage,
+                               otp=otp
+                               )
     return redirect('/login')
 
 
@@ -194,3 +193,29 @@ def reset():
             return render_template("reset.html", errorMsg="Wrong secret")
         return render_template("reset.html", errorMsg="OPT not found")
     return render_template("reset.html", errorMsg="")
+
+
+@app.route('/delete-group', methods=['POST'])
+def delete_group():
+    groupname = request.form['groupname']
+    supabase_client.table('user_groups').delete().eq(
+        'groupname', groupname).execute()
+    supabase_client.table('messages').delete().eq(
+        'groupname', groupname).execute()
+    supabase_client.table('groups').delete().eq(
+        'groupname', groupname).execute()
+    return redirect('/')
+
+
+@app.route('/update-group', methods=['POST'])
+def update_group():
+    new_groupname = request.form['new-groupname']
+    groupname = request.form['groupname']
+    supabase_client.table('messages').update(
+        {"groupname": new_groupname}).eq('groupname', groupname).execute()
+    supabase_client.table('groups').update(
+        {"groupname": new_groupname}).eq('groupname', groupname).execute()
+    session["groupname"] = new_groupname
+    supabase_client.table('user_groups').update(
+        {"groupname": new_groupname}).eq('groupname', groupname).execute()
+    return redirect('/')

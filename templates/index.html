@@ -35,13 +35,13 @@
             <div
               class="card-header-group p-2 bg-dark text-warning d-flex justify-content-between align-items-center border-bottom">
               <span><b>Welcome</b>, {{ username }}</span>
+              <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
+                onclick="copyOTP('{{otp}}')"><b>Copy Key</b></button>
               <form action="/logout" method="POST">
                 <button type="submit" class="btn p-0 text-warning">
-                  Logout <i class="bi bi-door-open"></i>
+                  <i class="bi bi-door-open"></i>
                 </button>
               </form>
-              <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
-                onclick="copyOTP('{{otp}}')"><b>OTP</b></button>
             </div>
             {% if session.username == 'admin' %}
             <div class="d-flex align-items-stretch border-bottom">
@@ -49,7 +49,7 @@
                 <input type="text" name="groupname" placeholder="Enter group name" class="form-control me-3 flex-grow-1"
                   required>
                 <button type="submit" class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center">
-                  Add
+                  <i class="bi bi-plus-square"></i>
                 </button>
               </form>
             </div>
@@ -57,15 +57,36 @@
             <div class="list-group overflow-auto flex-grow-1 bg-dark">
               {% for group in groups %}
               <div class="d-flex align-items-stretch border-bottom">
-                <a href="#"
-                  class="list-group-item list-group-item-action group-link bg-dark text-white flex-grow-1 border-0"
-                  data-group-name="{{ group.groupname }}">
-                  {{ group["groupname"] }}</a>
+                <div class="d-flex flex-grow-1 align-items-center">
+                  <form action="/update-group" method="POST" class="d-flex flex-grow-1">
+                    <input
+                      class="list-group-item list-group-item-action group-link bg-dark text-white flex-grow-1 border-0"
+                      data-group-name="{{ group.groupname }}" value="{{ group['groupname'] }}" style="outline: none" {%
+                      if session.username !='admin' %} disabled {% endif %} name="new-groupname"/>
+                    {% if session.username == "admin" %}
+                    <button type="submit" class="btn bg-dark text-warning border-0 ms-2">
+                      <i class="bi bi-repeat"></i>
+                    </button>
+                    <input type="hidden" name="groupname" value="{{ group.groupname }}">
+                    {% endif %}
+                  </form>
+                </div>
+                {% if session.username == 'admin' %}
+                <form action="/delete-group" id="delete-group-{{ group.groupname }}"
+                  onsubmit="return deleteGroup(this);" method="post" class="ms-2 d-flex align-items-center">
+                  <input type="hidden" name="groupname" value="{{ group.groupname }}">
+                  <button type="submit" class="btn bg-dark text-danger border-0">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </form>
+                {% endif %}
                 <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
                   data-group-name="{{ group.sharelink }}"
-                  onclick="shareGroup('{{ group.sharelink }}', '{{group.groupname}}')"><b>Share</b></button>
+                  onclick="shareGroup('{{ group.sharelink }}', '{{ group.groupname }}')"><i
+                    class="bi bi-share-fill"></i></button>
               </div>
               {% endfor %}
+
             </div>
           </div>
           <div id="message" class="col-lg-9 col-12 d-flex flex-column p-0 bg-dark">
@@ -80,12 +101,14 @@
               <div
                 class="card-header message-header bg-dark text-white d-flex justify-content-between align-items-center border-bottom mb-2">
                 <form action="/update-message" class="d-flex align-items-center w-100" method="post">
-                  <input name="groupmessage" id="groupmessage"
-                    value="{{groupmessage if groupmessage else 'Hello everyone!'}}" maxlength="30"
-                    class="bg-dark text-white border-0 flex-grow-1 focus-ring" style="outline: none;"
-                    placeholder="Enter your message here" {%if session.username !='admin' %} disabled {% endif %}>
+                  <textarea name="groupmessage" id="groupmessage" rows="4"
+                    class="bg-dark text-white border-0 flex-grow-1 focus-ring" style="outline: none; resize: none;"
+                    placeholder="Enter your message here" {%if session.username !='admin' %} disabled {% endif
+                    %}>{{groupmessage if groupmessage else 'Hello everyone!'}}</textarea>
                   {% if session.username == "admin" %}
-                  <button class="btn btn-warning text-dark ms-2"><b>Update</b></button>
+                  <button type="submit" class="btn bg-dark text-warning border-0">
+                    <i class="bi bi-repeat"> Update</i>
+                  </button>
                   <input type="hidden" name="groupname" value="{{groupname}}">
                   {% endif %}
                 </form>
@@ -270,6 +293,15 @@
     function convertTextToLinks(text) {
       const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
       return text.replace(urlPattern, '<a href="$1" target="_blank">$1</a>');
+    }
+
+    function deleteGroup(form) {
+      let confirmation = confirm("Are you sure you want to delete this group?");
+      if (confirmation) {
+        form.submit();
+        return true;
+      }
+      return false;
     }
 
   </script>
