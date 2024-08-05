@@ -38,7 +38,11 @@ def home():
         if len(response) != 0:
             otp = response[0]["otp"]
         groupname = session.get("groupname", "No Group Open")
-        groupmessage = session.get("groupmessage", "Hello Group")
+        response = supabase_client.from_("groups").select(
+            "groupmessage").eq("groupname", groupname).execute().data
+        groupmessage = "Hello everyone!"
+        if len(response) != 0:
+            groupmessage = response[0]["groupmessage"]
         groups_query = supabase_client.from_(
             'user_groups').select('groupname,sharelink')
         if session["username"] != 'admin':
@@ -47,7 +51,11 @@ def home():
             groups = supabase_client.from_('groups').select(
                 'groupname,sharelink').execute().data
         print(otp)
-        return render_template('index.html', username=username, groups=groups, groupname=groupname, groupmessage=groupmessage, otp=otp)
+        return render_template('index.html', 
+                username=username, groups=groups,
+                groupname=groupname, groupmessage=groupmessage,
+                otp=otp
+            )
     return redirect('/login')
 
 
