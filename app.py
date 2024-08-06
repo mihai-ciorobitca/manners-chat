@@ -43,6 +43,7 @@ def home():
         groupmessage = "Hello everyone!"
         if len(response) != 0:
             groupmessage = response[0]["groupmessage"]
+        session["groupmessage"] = groupmessage
         groups_query = supabase_client.from_(
             'user_groups').select('groupname,sharelink')
         if session["username"] != 'admin':
@@ -52,7 +53,7 @@ def home():
                 'groupname,sharelink').execute().data
         return render_template('index.html',
                                username=username, groups=groups,
-                               groupname=groupname, groupmessage=groupmessage,
+                               groupname=groupname,
                                otp=otp
                                )
     return redirect('/login')
@@ -152,16 +153,15 @@ def get_messages(data):
         groupmessage = groupmessage[0]["groupmessage"]
     else:
         groupmessage = ""
-    session["groupmessage"] = groupmessage
     response = supabase_client.table('messages').select(
         '*').eq('groupname', groupname).order('date').execute()
     messages = response.data if response.data else []
-    emit('message_list', messages)
+    emit('message_list', {"messages": messages, "groupmessage": groupmessage})
 
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.pop('username', None)
+    session.clear()
     return redirect('/login')
 
 
@@ -198,12 +198,9 @@ def reset():
 @app.route('/delete-group', methods=['POST'])
 def delete_group():
     groupname = request.form['groupname']
-    supabase_client.table('user_groups').delete().eq(
-        'groupname', groupname).execute()
-    supabase_client.table('messages').delete().eq(
-        'groupname', groupname).execute()
     supabase_client.table('groups').delete().eq(
         'groupname', groupname).execute()
+    session.pop("groupname")
     return redirect('/')
 
 
@@ -211,11 +208,7 @@ def delete_group():
 def update_group():
     new_groupname = request.form['new-groupname']
     groupname = request.form['groupname']
-    supabase_client.table('messages').update(
-        {"groupname": new_groupname}).eq('groupname', groupname).execute()
     supabase_client.table('groups').update(
         {"groupname": new_groupname}).eq('groupname', groupname).execute()
     session["groupname"] = new_groupname
-    supabase_client.table('user_groups').update(
-        {"groupname": new_groupname}).eq('groupname', groupname).execute()
     return redirect('/')
