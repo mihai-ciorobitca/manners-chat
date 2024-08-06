@@ -214,4 +214,5 @@ def update_group(data):
     supabase_client.table('groups').update(
         {"groupname": new_groupname}).eq('groupname', groupname).execute()
     session["groupname"] = new_groupname
-    emit('group_name_updated', {'new_groupname': new_groupname})
+    print({'old_groupname': groupname, 'new_groupname': new_groupname})
+    emit('group_name_updated', {'old_groupname': groupname, 'new_groupname': new_groupname})

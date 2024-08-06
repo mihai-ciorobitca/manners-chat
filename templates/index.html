@@ -94,7 +94,7 @@
             <div class="card flex-grow-1 d-flex flex-column mb-2 bg-dark">
               <div
                 class="card-header-chat p-2 bg-dark text-white d-flex justify-content-between align-items-center border-bottom">
-                <b><span id="current-chat-header" class="text-warning"></span></b>
+                <b><span id="current-chat-header" class="text-warning" name="{{ groupname }}"></span></b>
                 <button id="back-button" class="btn bg-warning text-dark d-lg-none border-0"><i
                     class="bi bi-arrow-left"></i>
                   <b>Groups</b></button>
@@ -103,9 +103,8 @@
                 class="card-header message-header bg-dark text-white d-flex justify-content-between align-items-center border-bottom mb-0">
                 <form id="update-message" class="d-flex align-items-center w-100">
                   <textarea name="groupmessage" id="groupmessage" rows="4"
-                    class="bg-dark text-white border-0 flex-grow-1 focus-ring" style="outline: none; resize: none;"
-                    placeholder="Enter your message here" {% if session.username !='admin' %} disabled {% endif
-                    %}>{{ session.groupmessage }}</textarea>
+                    class="bg-dark text-white border-0 flex-grow-1 focus-ring" style="outline: none; resize: none;" {%
+                    if session.username !='admin' %} disabled {% endif %}>{{ session.groupmessage }}</textarea>
                   {% if session.username == 'admin' %}
                   <button type="submit" class="btn bg-dark text-warning border-0">
                     <i class="bi bi-repeat"> Update</i>
@@ -167,7 +166,7 @@
 
       $('.group-link').on('click', function (event) {
         event.preventDefault();
-        const groupName = "{{ session.groupname }}";
+        const groupName = $(this).data('group-name');
         $('#current-chat-header').text(groupName);
         $('#group').addClass('d-none d-lg-block').removeClass('d-lg-flex');
         $('#message').removeClass('d-none');
@@ -180,13 +179,16 @@
         event.preventDefault();
         let newGroupName = form.querySelector('input[name="new-groupname"]').value;
         let groupName = form.querySelector('input[name="groupname"]').value;
-        alert("Group name updated!");
         socket.emit('update_group', { groupname: groupName, new_groupname: newGroupName });
       }
 
       socket.on('group_name_updated', (data) => {
         new_groupname = data.new_groupname;
-        document.getElementById("current-chat-header").textContent = new_groupname;
+        groupname_header = document.getElementById("current-chat-header");
+        if (groupname_header.getAttribute('name') == data.old_groupname) {
+          groupname_header.textContent = new_groupname;
+        }
+        alert("Group name updated!");
       });
 
       document.getElementById('message-form').addEventListener('submit', (event) => {
@@ -202,7 +204,6 @@
         event.preventDefault();
         let groupmessage = document.getElementById('groupmessage').value;
         let groupname = document.getElementById('groupname').value;
-        alert("Message updated!");
         socket.emit('update_message', { groupname: groupname, groupmessage: groupmessage });
       });
 
@@ -240,6 +241,7 @@
 
       socket.on('message_update', function (data) {
         document.getElementById('groupmessage').value = data.groupmessage;
+        alert("Message updated!");
       });
 
       socket.on('message_list', (data) => {
