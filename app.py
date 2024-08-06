@@ -111,9 +111,8 @@ def register():
         if len(user) > 0:
             return render_template('register.html', errorMsg="Username already exists")
         password = request.form['password']
-        email = request.form['email']
         supabase_client.table('users').insert(
-            {"username": username, "password": generate_password_hash(password), "email": email, "otp": pyotp.random_base32()}).execute()
+            {"username": username, "password": generate_password_hash(password), "otp": pyotp.random_base32()}).execute()
         return redirect('/login')
     return render_template('register.html', errorMsg="")
 
