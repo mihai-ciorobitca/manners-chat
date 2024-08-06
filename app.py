@@ -25,7 +25,7 @@ app.config['SESSION_MONGODB_COLLECT'] = 'sessions'
 
 Session(app)
 
-socketio = SocketIO(app, cors_allowed_origins="*", manage_session=False)
+socketio = SocketIO(app, manage_session=False)
 
 
 @app.route('/')
@@ -163,7 +163,7 @@ def get_messages(data):
         '*').eq('groupname', groupname).order('date').execute()
     messages = response.data if response.data else []
     emit('message_list', {"messages": messages,
-         "groupmessage": groupmessage}, to=groupname)
+         "groupmessage": groupmessage, "groupname": groupname}, to=groupname)
 
 
 @socketio.on('update_message')

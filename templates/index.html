@@ -36,7 +36,7 @@
               class="card-header-group p-2 bg-dark text-warning d-flex justify-content-between align-items-center border-bottom">
               <span><b>Welcome</b>, {{ username }}</span>
               <button class="btn bg-dark text-warning border-0 ms-2 d-flex align-items-center"
-                onclick="copyOTP('{{otp}}')"><b>Copy Key</b></button>
+                onclick="copyOTP('{{ otp }}')"><b>Copy Key</b></button>
               <form action="/logout" method="POST">
                 <button type="submit" class="btn p-0 text-warning" onclick="this.blur();">
                   <i class="bi bi-door-open"></i>
@@ -200,6 +200,7 @@
         let groupmessage = document.getElementById('groupmessage').value;
         let groupname = document.getElementById('groupname').value;
         socket.emit('update_message', { groupname: groupname, groupmessage: groupmessage });
+        alert("Message updated!");
       });
 
       socket.on('receive_message', (data) => {
@@ -236,13 +237,14 @@
 
       socket.on('message_update', function (data) {
         document.getElementById('groupmessage').value = data.groupmessage;
-        alert("Message updated!");
       });
 
       socket.on('message_list', (data) => {
         messages = data["messages"]
         groupmessage = data["groupmessage"]
+        groupname = data["groupname"];
         document.getElementById("groupmessage").value = groupmessage;
+        document.getElementById("groupname").value = groupname;
         let messageContainer = document.getElementById('message-container');
         messages.forEach((data) => {
           const messageElement = document.createElement('div');
