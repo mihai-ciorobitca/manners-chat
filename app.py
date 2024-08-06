@@ -4,7 +4,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from dotenv import load_dotenv
 from os import getenv
 from requests import post
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_session import Session
 import pyotp
 from pymongo import MongoClient
@@ -125,27 +125,32 @@ def add_group():
     return redirect("/")
 
 
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return redirect('/login')
+
+
 @socketio.on('send_message')
 def send_message(data):
     username = session.get('username')
-    if username:
-        text = data['text']
-        groupname = session['groupname']
-        try:
-            supabase_client.table('messages').insert({
-                'username': username,
-                'text': text,
-                'groupname': groupname,
-                'date': data['date']
-            }).execute()
-            emit('receive_message', data, broadcast=True)
-        except Exception as e:
-            print(f"Error: {e}")
+    text = data['text']
+    groupname = session['groupname']
+    supabase_client.table('messages').insert({
+        'username': username,
+        'text': text,
+        'groupname': groupname,
+        'date': data['date']
+    }).execute()
+    emit('receive_message', data, to=groupname)
 
 
 @socketio.on('get_messages')
 def get_messages(data):
+    old_groupname = session["groupname"]
+    leave_room(old_groupname)
     groupname = data['groupname']
+    join_room(groupname)
     session["groupname"] = groupname
     groupmessage = supabase_client.from_("groups").select(
         "groupmessage").eq("groupname", groupname).execute().data
@@ -156,13 +161,8 @@ def get_messages(data):
     response = supabase_client.table('messages').select(
         '*').eq('groupname', groupname).order('date').execute()
     messages = response.data if response.data else []
-    emit('message_list', {"messages": messages, "groupmessage": groupmessage})
-
-
-@app.route('/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return redirect('/login')
+    emit('message_list', {"messages": messages,
+         "groupmessage": groupmessage}, to=groupname)
 
 
 @app.route('/update-message', methods=['POST'])
