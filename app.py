@@ -147,8 +147,9 @@ def send_message(data):
 
 @socketio.on('get_messages')
 def get_messages(data):
-    old_groupname = session["groupname"]
-    leave_room(old_groupname)
+    old_groupname = session.get("groupname", None)
+    if old_groupname:
+        leave_room(old_groupname)
     groupname = data['groupname']
     join_room(groupname)
     session["groupname"] = groupname
