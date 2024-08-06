@@ -56,9 +56,9 @@
             {% endif %}
             <div class="list-group overflow-auto flex-grow-1 bg-dark">
               {% for group in groups %}
-              <div class="d-flex align-items-stretch border-bottom">
+              <div class="d-flex align-items-stretch border-bottom" id="div-{{ groupname }}">
                 <div class="d-flex flex-grow-1 align-items-center">
-                  <form id="update-group" class="d-flex flex-grow-1" onsubmit="update_group(event, this)">
+                  <form class="d-flex flex-grow-1" onsubmit="update_group(event, this)">
                     <input class="list-group-item list-group-item-action bg-dark text-white flex-grow-1 border-0"
                       data-group-name="{{ group.groupname }}" value="{{ group['groupname'] }}" style="outline: none" {%
                       if session.username !='admin' %} disabled {% endif %} name="new-groupname" />
@@ -71,8 +71,8 @@
                   </form>
                 </div>
                 {% if session.username == 'admin' %}
-                <form action="/delete-group" id="delete-group-{{ group.groupname }}"
-                  onsubmit="return deleteGroup(this);" method="post" class="ms-2 d-flex align-items-center">
+                <form action="/delete-group" onsubmit="return deleteGroup(this);" method="post"
+                  class="ms-2 d-flex align-items-center">
                   <input type="hidden" name="groupname" value="{{ group.groupname }}">
                   <button type="submit" class="btn bg-dark text-danger border-0">
                     <i class="bi bi-trash-fill"></i>
@@ -87,7 +87,6 @@
                   data-group-name="{{ group.groupname }}"> <i class="bi bi-box-arrow-in-right"></i></a>
               </div>
               {% endfor %}
-
             </div>
           </div>
           <div id="message" class="col-lg-9 col-12 d-flex flex-column p-0 bg-dark">
@@ -183,13 +182,9 @@
       }
 
       socket.on('group_name_updated', (data) => {
-        new_groupname = data.new_groupname;
-        groupname_header = document.getElementById("current-chat-header");
-        if (groupname_header.getAttribute('name') == data.old_groupname) {
-          groupname_header.textContent = new_groupname;
-        }
-        alert("Group name updated!");
+        window.location.reload();
       });
+
 
       document.getElementById('message-form').addEventListener('submit', (event) => {
         event.preventDefault();
