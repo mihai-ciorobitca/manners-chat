@@ -166,14 +166,16 @@ def get_messages(data):
          "groupmessage": groupmessage}, to=groupname)
 
 
-@app.route('/update-message', methods=['POST'])
-def update_message():
-    groupname = request.form["groupname"]
-    groupmessage = request.form["groupmessage"]
+@socketio.on('update_message')
+def update_message(data):
+    groupname = data['groupname']
+    groupmessage = data['groupmessage']
+    print("Updating in group " + groupname)
     supabase_client.table("groups").update(
         {"groupmessage": groupmessage}).eq("groupname", groupname).execute()
     session["groupmessage"] = groupmessage
-    return redirect("/")
+    emit('message_update', {'groupname': groupname,
+         'groupmessage': groupmessage}, to=groupname)
 
 
 @app.route("/reset", methods=["POST", "GET"])
@@ -205,11 +207,11 @@ def delete_group():
     return redirect('/')
 
 
-@app.route('/update-group', methods=['POST'])
-def update_group():
-    new_groupname = request.form['new-groupname']
-    groupname = request.form['groupname']
+@socketio.on('update_group')
+def update_group(data):
+    new_groupname = data['new_groupname']
+    groupname = data['groupname']
     supabase_client.table('groups').update(
         {"groupname": new_groupname}).eq('groupname', groupname).execute()
     session["groupname"] = new_groupname
-    return redirect('/')
+    emit('group_name_updated', {'new_groupname': new_groupname})

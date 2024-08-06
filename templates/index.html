@@ -58,7 +58,7 @@
               {% for group in groups %}
               <div class="d-flex align-items-stretch border-bottom">
                 <div class="d-flex flex-grow-1 align-items-center">
-                  <form action="/update-group" method="POST" class="d-flex flex-grow-1">
+                  <form id="update-group" class="d-flex flex-grow-1" onsubmit="update_group(event, this)">
                     <input class="list-group-item list-group-item-action bg-dark text-white flex-grow-1 border-0"
                       data-group-name="{{ group.groupname }}" value="{{ group['groupname'] }}" style="outline: none" {%
                       if session.username !='admin' %} disabled {% endif %} name="new-groupname" />
@@ -101,17 +101,17 @@
               </div>
               <div
                 class="card-header message-header bg-dark text-white d-flex justify-content-between align-items-center border-bottom mb-0">
-                <form action="/update-message" class="d-flex align-items-center w-100" method="post">
+                <form id="update-message" class="d-flex align-items-center w-100">
                   <textarea name="groupmessage" id="groupmessage" rows="4"
                     class="bg-dark text-white border-0 flex-grow-1 focus-ring" style="outline: none; resize: none;"
-                    placeholder="Enter your message here" {%if session.username !='admin' %} disabled {% endif
+                    placeholder="Enter your message here" {% if session.username !='admin' %} disabled {% endif
                     %}>{{ session.groupmessage }}</textarea>
-                  {% if session.username == "admin" %}
+                  {% if session.username == 'admin' %}
                   <button type="submit" class="btn bg-dark text-warning border-0">
                     <i class="bi bi-repeat"> Update</i>
                   </button>
-                  <input type="hidden" name="groupname" value="{{groupname}}">
                   {% endif %}
+                  <input type="hidden" id="groupname" value="{{ session.groupname }}">
                 </form>
               </div>
               <div class="card-body p-2 d-flex flex-column overflow-auto flex-grow-1 bg-dark" id="message-container">
@@ -167,13 +167,26 @@
 
       $('.group-link').on('click', function (event) {
         event.preventDefault();
-        const groupName = $(this).data('group-name');
+        const groupName = "{{ session.groupname }}";
         $('#current-chat-header').text(groupName);
         $('#group').addClass('d-none d-lg-block').removeClass('d-lg-flex');
         $('#message').removeClass('d-none');
         messageInput.disabled = false;
         $('#message-container').empty();
         socket.emit('get_messages', { groupname: groupName });
+      });
+
+      window.update_group = function (event, form) {
+        event.preventDefault();
+        let newGroupName = form.querySelector('input[name="new-groupname"]').value;
+        let groupName = form.querySelector('input[name="groupname"]').value;
+        alert("Group name updated!");
+        socket.emit('update_group', { groupname: groupName, new_groupname: newGroupName });
+      }
+
+      socket.on('group_name_updated', (data) => {
+        new_groupname = data.new_groupname;
+        document.getElementById("current-chat-header").textContent = new_groupname;
       });
 
       document.getElementById('message-form').addEventListener('submit', (event) => {
@@ -183,6 +196,14 @@
         const msgData = { text: text, username: username, date: new Date() };
         socket.emit('send_message', msgData);
         messageInput.value = '';
+      });
+
+      document.getElementById('update-message').addEventListener('submit', (event) => {
+        event.preventDefault();
+        let groupmessage = document.getElementById('groupmessage').value;
+        let groupname = document.getElementById('groupname').value;
+        alert("Message updated!");
+        socket.emit('update_message', { groupname: groupname, groupmessage: groupmessage });
       });
 
       socket.on('receive_message', (data) => {
@@ -215,6 +236,10 @@
         messageContainer.appendChild(messageElement);
 
         scrollToBottomFunc();
+      });
+
+      socket.on('message_update', function (data) {
+        document.getElementById('groupmessage').value = data.groupmessage;
       });
 
       socket.on('message_list', (data) => {
